@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hôm nay ăn gì?</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🍽️ Hôm nay ăn gì?</h1>
+        <form method="POST">
+            <label for="title">Chọn một món bạn thích:</label>
+            <select name="title">
+                {% for t in recipes %}
+                    <option value="{{ t }}" {% if selected == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Gợi ý món tương tự</button>
+        </form>
+
+        {% if suggestions %}
+            <h2>✨ Gợi ý món tương tự:</h2>
+            <ul>
+            {% for s in suggestions.itertuples() %}
+                <li>
+                    <strong>{{ s.title }}</strong> – {{ s.readyInMinutes }} phút – {{ s.calories }} calo<br>
+                    <img src="{{ s.image }}" width="200"><br>
+                    <em>{{ s.ingredients }}</em>
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</body>
+</html>
