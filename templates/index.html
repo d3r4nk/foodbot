@@ -1,34 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>Hôm nay ăn gì?</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What to eat today ?</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>🍽️ Hôm nay ăn gì?</h1>
-        <form method="POST">
-            <label for="title">Chọn một món bạn thích:</label>
-            <select name="title">
-                {% for t in recipes %}
-                    <option value="{{ t }}" {% if selected == t %}selected{% endif %}>{{ t }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit">Gợi ý món tương tự</button>
-        </form>
+        <h1>🍽️ What to eat today ?</h1>
 
-        {% if suggestions %}
-            <h2>✨ Gợi ý món tương tự:</h2>
-            <ul>
-            {% for s in suggestions.itertuples() %}
-                <li>
-                    <strong>{{ s.title }}</strong> – {{ s.readyInMinutes }} phút – {{ s.calories }} calo<br>
-                    <img src="{{ s.image }}" width="200"><br>
-                    <em>{{ s.ingredients }}</em>
-                </li>
-            {% endfor %}
-            </ul>
-        {% endif %}
+        <!-- Phần 1: Tìm kiếm món ăn tương tự -->
+        <div class="section" id="section1">
+            <h2>1. Relative recommendations:</h2>
+            <form method="POST">
+                <label for="title">Choose what you want to get the recommendations:</label>
+                <select name="title" required>
+                    {% for t in recipes %}
+                        <option value="{{ t['title'] }}" {% if selected == t['title'] %}selected{% endif %}>{{ t['title'] }}</option>
+                    {% endfor %}
+                </select>
+
+                <p>Chọn phương pháp gợi ý:</p>
+                <label>
+                    <input type="radio" name="method" value="doc2vec" {% if selected_method == 'doc2vec' %}checked{% endif %}>
+                    Doc2Vec
+                </label>
+                <label>
+                    <input type="radio" name="method" value="spacy" {% if selected_method == 'spacy' %}checked{% endif %}>
+                    SpaCy
+                </label>
+                <label>
+                    <input type="radio" name="method" value="tfidf" {% if selected_method == 'tfidf' %}checked{% endif %}>
+                    TF-IDF
+                </label>
+
+                <button type="submit">Recommend relative food</button>
+            </form>
+
+            {% if recommendations %}
+                <div class="result">
+                    <h3>Relative Recommendations:</h3>
+                    {% for rec in recommendations %}
+                        <div class="recipe-card">
+                            <h4>{{ rec['title'] }}</h4>
+                            <img src="{{ rec['image'] }}" alt="{{ rec['title'] }}" width="200">
+                            <p><strong>Ready in minutes:</strong> {{ rec['readyInMinutes'] }} phút</p>
+                            <p><strong>Ingredients:</strong> {{ rec['ingredients'] }}</p>
+                            <p><strong>Instructions:</strong> {{ rec['instructions'] }}</p>
+                        </div>
+                        <hr>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Phần 2: Tìm món ăn với thông tin về thời gian và nguyên liệu -->
+        <div class="section" id="section2">
+            <h2>2. What do you want ?:</h2>
+            <form method="POST">
+                <label for="readyInMinutes">Ready in ? (Minutes):</label>
+                <input type="number" name="readyInMinutes" required>
+
+                <label for="ingredients">Ingredients:</label>
+                <textarea name="ingredients" rows="4" required></textarea>
+
+                <button type="submit">Search Now</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
