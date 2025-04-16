@@ -45,7 +45,7 @@
                         <div class="recipe-card">
                             <h4>{{ rec['title'] }}</h4>
                             <img src="{{ rec['image'] }}" alt="{{ rec['title'] }}" width="200">
-                            <p><strong>Ready in minutes:</strong> {{ rec['readyInMinutes'] }} phút</p>
+                            <p><strong>Ready in :</strong> {{ rec['readyInMinutes'] }} minutes </p>
                             <p><strong>Ingredients:</strong> {{ rec['ingredients'] }}</p>
                             <p><strong>Instructions:</strong> {{ rec['instructions'] }}</p>
                         </div>
@@ -60,13 +60,38 @@
             <h2>2. What do you want ?:</h2>
             <form method="POST">
                 <label for="readyInMinutes">Ready in ? (Minutes):</label>
-                <input type="number" name="readyInMinutes" required>
+                <label for="time_range">Chọn mốc thời gian:</label>
+                <label>
+                    <input type="radio" name="time_range" value="0-15" {% if selected_time == '0-15' %}checked{% endif %}> 0-15 minutes
+                </label>
+                <label>
+                    <input type="radio" name="time_range" value="16-30" {% if selected_time == '16-30' %}checked{% endif %}> 16-30 minutes
+                </label>
+                <label>
+                    <input type="radio" name="time_range" value=">30" {% if selected_time == '>30' %}checked{% endif %}> More than 30 minutes
+                </label>
 
                 <label for="ingredients">Ingredients:</label>
                 <textarea name="ingredients" rows="4" required></textarea>
 
                 <button type="submit">Search Now</button>
             </form>
+
+            {% if searchs %}
+                <div class="result">
+                    <h3>Random search results :</h3>
+                    {% for rec in searchs %}
+                        <div class="recipe-card">
+                            <h4>{{ rec['title'] }}</h4>
+                            <img src="{{ rec['image'] }}" alt="{{ rec['title'] }}" width="200">
+                            <p><strong>Ready in :</strong> {{ rec['readyInMinutes'] }} minutes </p>
+                            <p><strong>Ingredients:</strong> {{ rec['ingredients'] }}</p>
+                            <p><strong>Instructions:</strong> {{ rec['instructions'] }}</p>
+                        </div>
+                        <hr>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </div>
 </body>
