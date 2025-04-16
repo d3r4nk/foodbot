@@ -1,10 +1,8 @@
-# recommender.py
 import pandas as pd
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from nltk.tokenize import word_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
 import nltk
-import re
 
 # Tải tokenizer nếu chưa có
 try:
@@ -12,21 +10,13 @@ try:
 except LookupError:
     nltk.download('punkt')
 
-def preprocess_data(df):
-    df['soup'] = df['title'] + ' ' + df['ingredients'] + ' ' + df['instructions']
-    df['soup'] = df['soup'].fillna('').astype(str)
-    return df
-
-def get_embeddings(texts):
+def build_recommender(df):
+    texts = df['soup'].fillna('').astype(str).tolist()
     tagged_data = [TaggedDocument(words=word_tokenize(doc.lower()), tags=[str(i)]) for i, doc in enumerate(texts)]
     model = Doc2Vec(vector_size=100, window=5, min_count=2, workers=4, epochs=40)
     model.build_vocab(tagged_data)
     model.train(tagged_data, total_examples=model.corpus_count, epochs=model.epochs)
-    vectors = [model.infer_vector(word_tokenize(str(text).lower())) for text in texts]
-    return vectors, model
-
-def build_recommender(df):
-    vectors, model = get_embeddings(df['soup'])
+    vectors = [model.infer_vector(word_tokenize(text.lower())) for text in texts]
     sim_matrix = cosine_similarity(vectors)
     return sim_matrix
 
@@ -39,7 +29,3 @@ def recommend(df, sim_matrix, title):
     scores = sorted(scores, key=lambda x: x[1], reverse=True)[1:6]
     result_indices = [i[0] for i in scores]
     return df.iloc[result_indices].to_dict(orient='records')
-
-def clean_html(text):
-    cleaned_text = re.sub(r'</?(ul|ol|li).*?>', '', text)
-    return cleaned_text

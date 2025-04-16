@@ -42,6 +42,7 @@ def clean_html(text):
 # Load data and preprocess
 df = pd.read_csv('recipes.csv')  # Load your recipe data from CSV
 df = preprocess_data(df)
+df['soup'] = df['soup'].fillna('').astype(str)
 
 # Build the recommender system
 sim_matrix = build_tfidf_recommender(df)
@@ -77,9 +78,6 @@ class RecipeRecommenderApp:
         
         self.time_label = tk.Label(self.details_frame, font=("Arial", 12))
         self.time_label.grid(row=1, column=1, sticky="w")
-        
-        self.calories_label = tk.Label(self.details_frame, font=("Arial", 12))
-        self.calories_label.grid(row=2, column=1, sticky="w")
         
         self.ingredients_label = tk.Label(self.details_frame, text="Ingredients:", font=("Arial", 14, "bold"))
         self.ingredients_label.grid(row=3, column=0, sticky="w", pady=(10, 5))
@@ -137,7 +135,6 @@ class RecipeRecommenderApp:
         # Update labels and text widgets with recipe details
         self.recipe_title_label.config(text=recipe_details['title'])
         self.time_label.config(text=f"Preparation Time: {recipe_details['readyInMinutes']} minutes")
-        self.calories_label.config(text=f"Calories: {recipe_details['calories'] or 'Unknown'} kcal")
         
         # Load and display recipe image
         image_url = recipe_details['image']

@@ -7,24 +7,28 @@ import pandas as pd
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from nltk.tokenize import word_tokenize
 import nltk
-nltk.download('punkt')  # dùng một lần để tải bộ tokenizer
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
 from sklearn.metrics.pairwise import cosine_similarity
 import re  # For HTML tag removal
 
-
-# Function definitions (same as above)
 def preprocess_data(df):
     """ Preprocesses recipe data to extract titles and ingredients. """
     df['soup'] = df['title'] + ' ' + df['ingredients'] + ' ' + df['instructions']
     return df
+
 def get_embeddings(texts):
     #huấn luyện mô hình Doc2Vec
     tagged_data = [TaggedDocument(words=word_tokenize(doc.lower()), tags=[str(i)]) for i, doc in enumerate(texts)]
     model = Doc2Vec(vector_size=100, window=5, min_count=2, workers=4, epochs=40)
     model.build_vocab(tagged_data)
     model.train(tagged_data, total_examples=model.corpus_count, epochs=model.epochs)
-    vectors = [model.infer_vector(word_tokenize(text.lower())) for text in texts]
+    vectors = [model.infer_vector(word_tokenize(str(text).lower())) for text in texts]
     return vectors
+
 def build_recommender(df):
     embeddings = get_embeddings(df['soup'])
     sim_matrix = cosine_similarity(embeddings)
@@ -52,8 +56,9 @@ def clean_html(text):
     return clean_text.strip()  # Remove leading/trailing spaces
 
 # Load data and preprocess
-df = pd.read_csv('recipes.csv')  # Load your recipe data from CSV
+df = pd.read_csv('recipes.csv')
 df = preprocess_data(df)
+df['soup'] = df['soup'].fillna('').astype(str)
 
 # Build the recommender system
 sim_matrix = build_recommender(df)
@@ -89,9 +94,6 @@ class RecipeRecommenderApp:
         
         self.time_label = tk.Label(self.details_frame, font=("Arial", 12))
         self.time_label.grid(row=1, column=1, sticky="w")
-        
-        self.calories_label = tk.Label(self.details_frame, font=("Arial", 12))
-        self.calories_label.grid(row=2, column=1, sticky="w")
         
         self.ingredients_label = tk.Label(self.details_frame, text="Ingredients:", font=("Arial", 14, "bold"))
         self.ingredients_label.grid(row=3, column=0, sticky="w", pady=(10, 5))
@@ -149,7 +151,6 @@ class RecipeRecommenderApp:
         # Update labels and text widgets with recipe details
         self.recipe_title_label.config(text=recipe_details['title'])
         self.time_label.config(text=f"Preparation Time: {recipe_details['readyInMinutes']} minutes")
-        self.calories_label.config(text=f"Calories: {recipe_details['calories'] or 'Unknown'} kcal")
         
         # Load and display recipe image
         image_url = recipe_details['image']

@@ -19,7 +19,8 @@ def preprocess_data(df):
 
 def get_embeddings(texts):
     """ Returns word embeddings for the given texts. """
-    return [nlp(text).vector for text in texts]
+    return [nlp(str(text)).vector for text in texts]
+
 
 def build_recommender(df):
     """ Builds a recommendation system using spaCy embeddings. """
@@ -87,9 +88,6 @@ class RecipeRecommenderApp:
         self.time_label = tk.Label(self.details_frame, font=("Arial", 12))
         self.time_label.grid(row=1, column=1, sticky="w")
         
-        self.calories_label = tk.Label(self.details_frame, font=("Arial", 12))
-        self.calories_label.grid(row=2, column=1, sticky="w")
-        
         self.ingredients_label = tk.Label(self.details_frame, text="Ingredients:", font=("Arial", 14, "bold"))
         self.ingredients_label.grid(row=3, column=0, sticky="w", pady=(10, 5))
         
@@ -146,7 +144,6 @@ class RecipeRecommenderApp:
         # Update labels and text widgets with recipe details
         self.recipe_title_label.config(text=recipe_details['title'])
         self.time_label.config(text=f"Preparation Time: {recipe_details['readyInMinutes']} minutes")
-        self.calories_label.config(text=f"Calories: {recipe_details['calories'] or 'Unknown'} kcal")
         
         # Load and display recipe image
         image_url = recipe_details['image']
