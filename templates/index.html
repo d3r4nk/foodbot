@@ -5,16 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>What to eat today ?</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .navigation-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 10px 0;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .navigation-button:hover {
+            background-color: #45a049;
+        }
+        
+        .button-container {
+            text-align: right;
+            margin: 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>🍽️ What to eat today ?</h1>
+        <!-- Nút điều hướng đến chatbot.html -->
+        <div class="button-container">
+            <a href="/chatbot" class="navigation-button">Chuyển đến Chatbot</a>
+        </div>
+        
+        <h1>🍽️ Ăn gì hôm nay ?</h1>
 
         <!-- Phần 1: Tìm kiếm món ăn tương tự -->
         <div class="section" id="section1">
-            <h2>1. Relative recommendations:</h2>
+            <h2>1. Gợi ý món tương tự:</h2>
             <form method="POST">
-                <label for="title">Choose what you want to get the recommendations:</label>
+                <label for="title">Tìm món ăn bạn muốn gợi ý </label>
                 <select name="title" required>
                     {% for t in recipes %}
                         <option value="{{ t['title'] }}" {% if selected == t['title'] %}selected{% endif %}>{{ t['title'] }}</option>
@@ -27,15 +56,23 @@
                     Doc2Vec
                 </label>
                 <label>
-                    <input type="radio" name="method" value="spacy" {% if selected_method == 'spacy' %}checked{% endif %}>
-                    SpaCy
-                </label>
-                <label>
                     <input type="radio" name="method" value="tfidf" {% if selected_method == 'tfidf' %}checked{% endif %}>
                     TF-IDF
                 </label>
+                <label>
+                    <input type="radio" name="method" value="pyvi" {% if selected_method == 'pyvi' %}checked{% endif %}>
+                    PyVi
+                </label>
+                <label>
+                    <input type="radio" name="method" value="bm25" {% if selected_method == 'bm25' %}checked{% endif %}>
+                    BM25
+                </label>
+                <label>
+                    <input type="radio" name="method" value="vncorenlp" {% if selected_method == 'vncorenlp' %}checked{% endif %}>
+                    VnCoreNLP
+                </label>
 
-                <button type="submit">Recommend relative food</button>
+                <button type="submit">Đề xuất món ăn tương tự </button>
             </form>
 
             {% if recommendations %}
@@ -57,29 +94,29 @@
 
         <!-- Phần 2: Tìm món ăn với thông tin về thời gian và nguyên liệu -->
         <div class="section" id="section2">
-            <h2>2. What do you want ?:</h2>
+            <h2>2. Bạn muốn món ăn được thực hiện trong bao nhiêu phút :</h2>
             <form method="POST">
                 <label for="readyInMinutes">Ready in ? (Minutes):</label>
                 <label for="time_range">Chọn mốc thời gian:</label>
                 <label>
-                    <input type="radio" name="time_range" value="0-15" {% if selected_time == '0-15' %}checked{% endif %}> 0-15 minutes
+                    <input type="radio" name="time_range" value="0-15" {% if selected_time == '0-15' %}checked{% endif %}> 0-15 phút 
                 </label>
                 <label>
-                    <input type="radio" name="time_range" value="16-30" {% if selected_time == '16-30' %}checked{% endif %}> 16-30 minutes
+                    <input type="radio" name="time_range" value="16-30" {% if selected_time == '16-30' %}checked{% endif %}> 16-30 phút 
                 </label>
                 <label>
-                    <input type="radio" name="time_range" value=">30" {% if selected_time == '>30' %}checked{% endif %}> More than 30 minutes
+                    <input type="radio" name="time_range" value=">30" {% if selected_time == '>30' %}checked{% endif %}> hơn 30 phút 
                 </label>
 
-                <label for="ingredients">Ingredients:</label>
+                <label for="ingredients">Nguyên liệu : </label>
                 <textarea name="ingredients" rows="4" required></textarea>
 
-                <button type="submit">Search Now</button>
+                <button type="submit">Tìm kiếm ngay</button>
             </form>
 
             {% if searchs %}
                 <div class="result">
-                    <h3>Random search results :</h3>
+                    <h3>Kết quả tìm ngẫu nhiên:</h3>
                     {% for rec in searchs %}
                         <div class="recipe-card">
                             <h4>{{ rec['title'] }}</h4>

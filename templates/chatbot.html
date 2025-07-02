@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOOD GPT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='chatbot.css') }}">
+    <style>
+        .navigation-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 10px 0;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .navigation-button:hover {
+            background-color: #45a049;
+        }
+        
+        .button-container {
+            text-align: right;
+            margin: 10px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Nút điều hướng đến index.html -->
+        <div class="button-container">
+            <a href="/" class="navigation-button">Quay lại trang chính</a>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-header">
+                <span class="chat-header-icon">🍽️</span>
+                <h2>FOODGPT</h2>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+            </div>
+            <div class="message-input">
+                <input type="text" id="user-input" placeholder="Bạn muốn ăn gì hôm nay?" class="form-control">
+                <button class="btn btn-success" id="send-btn">Gửi</button>
+            </div>
+        </div>
+    </div>
+    <div id="recipe-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="modal-recipe-content"></div>
+        </div>
+    </div>
+    <datalist id="recipes-list">
+        {% for recipe in recipes %}
+            <option value="{{ recipe }}">
+        {% endfor %}
+    </datalist>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messagesContainer = document.getElementById('chat-messages');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-btn');
+            
+            // Biến lưu trữ thông tin hiện tại của cuộc trò chuyện
+            let currentTimeRange = null;
+            let currentIngredients = [];
+            let currentModel = 'doc2vec';
+            
+            // Hiển thị tin nhắn chào mừng
+            addBotMessage({
+                type: 'greeting',
+                message: "Xin chào! Tôi là chatbot gợi ý món ăn. Tôi có thể giúp bạn tìm công thức cho món ăn yêu thích hoặc gợi ý món mới dựa trên sở thích của bạn. Bạn muốn ăn gì hôm nay?"
+            });
+            
+            // Hiển thị tin nhắn từ user
+            function addUserMessage(message) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', 'user-message');
+                messageElement.textContent = message;
+                messagesContainer.appendChild(messageElement);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            // Hiển thị tin nhắn từ bot
+            function addBotMessage(response) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', 'bot-message');
+                
+                // Xử lý tin nhắn dựa trên loại
+                let messageContent = '';
+                
+                // Xử lý tin nhắn dựa trên loại
+                if (response.type === 'error') {
+                    // Hiển thị thông báo lỗi với màu sắc khác
+                    messageContent = `<p class="error-message">${response.message}</p>`;
+                } 
+                else {
+                    // Tin nhắn thông thường
+                    messageContent += `<p>${response.message}</p>`;
+                    
+                    // Xử lý các loại tin nhắn đặc biệt
+                    if (response.type === 'models') {
+                        messageContent += '<div class="models-list">';
+                        response.models.forEach(model => {
+                            messageContent += `
+                                <div class="model-option" data-model="${model.id}">
+                                    <h5>${model.name}</h5>
+                                    <p>${model.description}</p>
+                                </div>
+                            `;
+                        });
+                        messageContent += '</div>';
+                    } 
+                    else if (response.type === 'help') {
+                        messageContent += '<ul class="options-list">';
+                        response.options.forEach(option => {
+                            messageContent += `<li class="help-option">${option}</li>`;
+                        });
+                        messageContent += '</ul>';
+                    }
+                    else if (response.type === 'ask_time') {
+                        messageContent += '<div class="time-ranges">';
+                        response.cooking_times.forEach(time => {
+                            messageContent += `
+                                <div class="time-range-option" data-time="${time.id}" data-ingredients="${response.ingredients ? response.ingredients.join(',') : ''}">
+                                    <h5>${time.name}</h5>
+                                    <p>${time.description}</p>
+                                </div>
+                            `;
+                        });
+                        messageContent += '</div>';
+                    }
+                    else if (response.type === 'ask_criteria') {
+                        messageContent += '<div class="time-ranges">';
+                        response.cooking_times.forEach(time => {
+                            messageContent += `
+                                <div class="time-range-option" data-time="${time.id}">
+                                    <h5>${time.name}</h5>
+                                    <p>${time.description}</p>
+                                </div>
+                            `;
+                        });
+                        messageContent += '</div>';
+                    }
+                    else if (response.type === 'similar_recipes' || response.type === 'random_recipes' || 
+                            response.type === 'filtered_recipes' || response.type === 'search_results') {
+                        // Hiển thị các công thức món ăn
+                        const recipes = response.recipes;
+                        
+                        console.log("Đang hiển thị recipes:", recipes);
+                        
+                        if (recipes && Array.isArray(recipes) && recipes.length > 0) {
+                            messageContent += '<div class="recipes-container">';
+                            recipes.forEach(recipe => {
+                                try {
+                                    // Store the full recipe data as a JSON string in a data attribute
+                                    const recipeData = JSON.stringify(recipe).replace(/"/g, '&quot;');
+                                    
+                                    messageContent += `
+                                        <div class="recipe-card" data-recipe='${recipeData}'>
+                                            <div class="recipe-card-header">${recipe.title || 'Món ăn không tên'}</div>
+                                            <div class="recipe-card-body">
+                                                ${recipe.image ? `<img src="${recipe.image}" alt="${recipe.title}" onerror="this.src='https://via.placeholder.com/200x150?text=Không+có+hình';this.onerror='';">` : '<div class="no-image">Không có hình</div>'}
+                                                <div class="recipe-info">
+                                                    <span class="recipe-info-label">Thời gian nấu:</span>
+                                                    <span>${recipe.readyInMinutes || 'N/A'} phút</span>
+                                                </div>
+                                                <div class="recipe-section">
+                                                    <div class="recipe-info-label">Nguyên liệu:</div>
+                                                    <p>${recipe.ingredients || 'Không có thông tin nguyên liệu'}</p>
+                                                </div>
+                                                <div class="recipe-section">
+                                                    <div class="recipe-info-label">Hướng dẫn:</div>
+                                                    <p>${recipe.instructions || 'Không có hướng dẫn nấu ăn'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                } catch (e) {
+                                    console.error("Lỗi khi tạo recipe card:", e, recipe);
+                                    messageContent += `<div class="recipe-card"><div class="recipe-card-header">Lỗi hiển thị món ăn</div></div>`;
+                                }
+                            });
+                            messageContent += '</div>';
+                        } else {
+                            console.warn("Không có recipes hoặc recipes rỗng:", recipes);
+                            messageContent += '<p>Không tìm thấy món ăn phù hợp. Vui lòng thử lại với yêu cầu khác.</p>';
+                        }
+                    }
+                }
+                
+                messageElement.innerHTML = messageContent;
+                messagesContainer.appendChild(messageElement);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // Thêm sự kiện cho các nút tương tác
+                if (response.type === 'models') {
+                    document.querySelectorAll('.model-option').forEach(option => {
+                        option.addEventListener('click', function() {
+                            const modelId = this.getAttribute('data-model');
+                            currentModel = modelId;
+                            userInput.value = `Dùng mô hình ${modelId} để tìm món ăn tương tự`;
+                            sendMessage();
+                        });
+                    });
+                }
+                else if (response.type === 'help') {
+                    document.querySelectorAll('.help-option').forEach(option => {
+                        option.addEventListener('click', function() {
+                            userInput.value = this.textContent;
+                            sendMessage();
+                        });
+                    });
+                }
+                else if (response.type === 'ask_time') {
+                    document.querySelectorAll('.time-range-option').forEach(option => {
+                        option.addEventListener('click', function() {
+                            const timeRange = this.getAttribute('data-time');
+                            const ingredients = this.getAttribute('data-ingredients');
+                            currentTimeRange = timeRange;
+                            
+                            // Gửi API request để lấy món ăn phù hợp
+                            addUserMessage(`Tôi muốn nấu món trong khoảng ${timeRange} phút với nguyên liệu ${ingredients ? ingredients.replace(',', ', ') : ''}`);
+                            
+                            // Hiển thị đang tải
+                            const loadingMsg = document.createElement('div');
+                            loadingMsg.classList.add('message', 'bot-message', 'loading-indicator');
+                            loadingMsg.innerHTML = `
+                                <div class="spinner-border text-success" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span>Đang tìm món ăn phù hợp...</span>
+                            `;
+                            messagesContainer.appendChild(loadingMsg);
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            
+                            fetch('/api/filter_recipes', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    time_range: timeRange,
+                                    ingredients: ingredients
+                                })
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! Status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                // Xóa thông báo đang tải
+                                messagesContainer.removeChild(loadingMsg);
+                                
+                                addBotMessage({
+                                    type: 'filtered_recipes',
+                                    message: `Đây là các món ăn phù hợp với thời gian ${timeRange} phút và có các nguyên liệu đã chọn:`,
+                                    recipes: data.recipes
+                                });
+                            })
+                            .catch(error => {
+                                // Xóa thông báo đang tải
+                                if (messagesContainer.contains(loadingMsg)) {
+                                    messagesContainer.removeChild(loadingMsg);
+                                }
+                                
+                                addBotMessage({
+                                    type: 'error',
+                                    message: 'Có lỗi xảy ra khi tìm kiếm món ăn. Vui lòng thử lại.'
+                                });
+                                console.error('Error:', error);
+                            });
+                        });
+                    });
+                }
+                else if (response.type === 'ask_criteria') {
+                    document.querySelectorAll('.time-range-option').forEach(option => {
+                        option.addEventListener('click', function() {
+                            const timeRange = this.getAttribute('data-time');
+                            currentTimeRange = timeRange;
+                            
+                            addUserMessage(`Tôi muốn nấu món trong khoảng ${timeRange} phút`);
+                            addBotMessage({
+                                type: 'ask_ingredients',
+                                message: `Tốt, tôi đã ghi nhận bạn muốn món ăn trong khoảng thời gian ${timeRange}. Bạn muốn sử dụng nguyên liệu gì?`
+                            });
+                        });
+                    });
+                }
+            }
+            
+            // Hàm gửi tin nhắn
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message === '') return;
+                
+                // Hiển thị tin nhắn của user
+                addUserMessage(message);
+                
+                // Xóa nội dung input
+                userInput.value = '';
+                
+                // Hiển thị đang tải
+                const loadingMsg = document.createElement('div');
+                loadingMsg.classList.add('message', 'bot-message', 'loading-indicator');
+                loadingMsg.innerHTML = `
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span>Đang xử lý...</span>
+                `;
+                messagesContainer.appendChild(loadingMsg);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // Gửi tin nhắn đến server
+                fetch('/api/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message, session_id: 'user-' + Date.now() })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Xóa thông báo đang tải
+                    messagesContainer.removeChild(loadingMsg);
+                    
+                    // Debug - in thông tin response
+                    console.log("Server response:", data);
+                    console.log("Response type:", data.type);
+                    console.log("Number of recipes:", data.recipes ? data.recipes.length : 0);
+                    
+                    if (data.recipes && data.recipes.length > 0) {
+                        console.log("First recipe:", data.recipes[0]);
+                    }
+                    
+                    // Kiểm tra nếu data là null hoặc undefined
+                    if (!data) {
+                        addBotMessage({
+                            type: 'error',
+                            message: 'Dữ liệu phản hồi không hợp lệ. Vui lòng thử lại.'
+                        });
+                        return;
+                    }
+                    
+                    // Hiển thị phản hồi từ bot
+                    addBotMessage(data);
+                    
+                    // Cập nhật trạng thái hiện tại
+                    if (data.type === 'similar_recipes' && data.model) {
+                        currentModel = data.model;
+                    }
+                    if (data.type === 'filtered_recipes' || data.type === 'search_results') {
+                        if (data.time_range) currentTimeRange = data.time_range;
+                        if (data.ingredients) currentIngredients = data.ingredients;
+                    }
+                })
+                .catch(error => {
+                    // Xóa thông báo đang tải
+                    if (messagesContainer.contains(loadingMsg)) {
+                        messagesContainer.removeChild(loadingMsg);
+                    }
+                    
+                    console.error('Error in fetch:', error);
+                    
+                    addBotMessage({
+                        type: 'error',
+                        message: 'Có lỗi xảy ra khi kết nối với server. Vui lòng thử lại sau.'
+                    });
+                });
+            }
+            
+            // Bắt sự kiện click nút gửi
+            sendButton.addEventListener('click', sendMessage);
+            
+            // Bắt sự kiện nhấn Enter
+            userInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='cardhandle.js') }}"></script>
+</body>
+</html>
