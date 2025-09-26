@@ -2,8 +2,10 @@ import requests
 import csv
 import time
 import os
+from dotenv import load_dotenv
 
-API_KEY = "07bdae4c141b42e5b706796bd28ba02f"
+load_dotenv()
+API_KEY = os.getenv("API_KEY")
 BASE_URL = "https://api.spoonacular.com"
 OUTPUT_FILE = "recipes.csv"
 NEW_RECIPES_TO_ADD = 150
