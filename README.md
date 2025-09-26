@@ -22,7 +22,7 @@ git push -uf origin main
 
 ## Integrate with your tools
 
-- [ ] [Set up project integrations](https://gitlab.com/mobile-to-do-app/khai-pha-d-li-u-web/-/settings/integrations)
+- [ ] [Set up project integrations](https://github.com/d3r4nk/foodbot)
 
 ## Collaborate with your team
 
