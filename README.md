@@ -15,7 +15,7 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin https://gitlab.com/mobile-to-do-app/khai-pha-d-li-u-web.git
+https://github.com/d3r4nk/foodbot
 git branch -M main
 git push -uf origin main
 ```
