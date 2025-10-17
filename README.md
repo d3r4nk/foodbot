@@ -64,4 +64,3 @@ Regex, NLTK, Unicodedata for text preprocessing
 
 HTML/CSS/Bootstrap for front-end templates
 
-📸 Screenshot
