@@ -42,9 +42,3 @@
 
 ---
 
-## Getting Started
-
-### 1) Clone
-```bash
-git clone https://github.com/d3r4nk/foodbot.git
-cd foodbot
